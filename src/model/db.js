@@ -43,14 +43,17 @@ const Pedidos = sequelize.define('Pedido',{
 
 const start = async()=>{
     try {
-        Comensales.hasOne(Mesas,{foreignKey:'idMesa'})
-        Mesas.belongsToMany(Comensales,{foreignKey:'idMesa'})
-        Pedidos.hasOne(Comensales,{foreignKey:'idCliente'})
-        Comensales.belongsToMany(Pedidos,{foreignKey:'idCliente'})
-        Pedidos.hasOne(Mesas,{foreignKey:'idMesa'})
-        Mesas.belongsToMany(Pedidos,{foreignKey:'idMesa'})
-        Pedidos.hasOne(Platos,{foreignKey:'idPlato'})
-        Platos.belongsToMany(Pedidos,{foreignKey:'idPlato'})
+        Comensales.belongsTo(Mesas,{foreignKey:'idMesa'})
+        Mesas.hasMany(Comensales,{foreignKey:'idMesa'})
+
+        Pedidos.belongsTo(Comensales,{foreignKey:'idCliente'})
+        Comensales.hasMany(Pedidos,{foreignKey:'idCliente'})
+
+        Pedidos.belongsTo(Mesas,{foreignKey:'idMesa'})
+        Mesas.hasMany(Pedidos,{foreignKey:'idMesa'})
+
+        Pedidos.belongsTo(Platos,{foreignKey:'idPlato'})
+        Platos.hasMany(Pedidos,{foreignKey:'idPlato'})
         await sequelize.authenticate();
     } catch (err) {}
 }
