@@ -1,11 +1,13 @@
 const express = require("express");
 const PlatosRoutes = require('./routes/PlatosRoutes')
 const MesasRoutes = require('./routes/MesasRoutes')
+const UsersRoutes = require("./routes/UserRoutes")
 
 class Aplicacion {
     constructor(){
         this.app = express();
         this.setPort();
+        this.setMiddlewares();
         this.enrutar();
     }
     setPort = ()=>{
@@ -14,11 +16,29 @@ class Aplicacion {
     enrutar = ()=>{
         const rutasPlatos = new PlatosRoutes();
         const rutasMesas = new MesasRoutes();
+        const rutasUsers = new UsersRoutes()
         this.app.use('/platos',rutasPlatos.router);
         this.app.use('/mesas',rutasMesas.router);
+        this.app.use('/clientes',rutasUsers.router)
+    }
+    setMiddlewares = ()=>{
+        this.app.use(express.urlencoded({extended:false}));
+        this.app.use(express.json())
+        this.app.use(this.handleCors)
+    }
+    handleCors = (req,res,next)=>{
+        res.set('Access-Control-Allow-Origin','*')
+        if(req.method==='OPTIONS' && req.headers['origin'] && req.headers['access-control-request-method']){
+            res.set('Access-Control-Allow-Methods','POST,DELETE,UPDATE');
+            res.set('Access-Control-Allow-Headers','Content-Type, Authorization');
+            res.status(200).send();  
+            return;        
+        }else{
+            next(); 
+        }
     }
     startServer = ()=>{
-        this.app.listen(this.app.get('port'),()=>{console.log('Escuchando en el puerto->',this.app.get('port'))})
+        this.app.listen(this.app.get('port'),()=>{/*console.log('Escuchando en el puerto->',this.app.get('port'))*/})
     }
 }
 
