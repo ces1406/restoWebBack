@@ -24,7 +24,7 @@ class Aplicacion {
     setMiddlewares = ()=>{
         this.app.use(express.urlencoded({extended:false}));
         this.app.use(express.json())
-        this.app.use(this.handleCors)
+        //this.app.use(this.handleCors)
     }
     handleCors = (req,res,next)=>{
         res.set('Access-Control-Allow-Origin','*')
