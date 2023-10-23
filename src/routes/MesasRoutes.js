@@ -51,16 +51,17 @@ class MesasRoutes{
                 return res.status(500).send()
             }
         })        
-        this.router.post('/ordenar/:idMesa',this.checkjwt ,async(req,res)=>{
+        this.router.post('/ordenar/:idMesa/:idCliente',this.checkjwt ,async(req,res)=>{
             //let peds=[]
             //console.log('body',req.body)
-            //const datos = await this.checkjwt(req,res);
+           // const datos = await this.checkjwt(req,res);
             //console.log('datos',this.datos)
             req.body.ordenes.forEach(e => {
+                //console.log('e->',JSON.stringify(e))
                 Pedidos.create({
                 //peds.push({
-                    idMesa:this.datos.idMesa,
-                    idCliente:this.datos.idCliente,
+                    idMesa:req.params.idMesa,//this.datos.idMesa,
+                    idCliente:req.params.idCliente,//this.datos.idCliente,
                     idPlato:e.idPlato,
                     cantidad: e.cantidad,
                     estado:'PREPARANDO',
@@ -106,6 +107,7 @@ class MesasRoutes{
                     }],
                     where:{idMesa:req.params.idMesa}
                 })
+                console.log('respondiendo->pedidos:',JSON.stringify(pedidos))
                 res.status(200).json({pedidos})
             } catch (error) {
                 res.statusMessage=error.msj;
