@@ -14,7 +14,7 @@ class UsersRoutes{
                 let config = {
                     headers:{
                         'Content-Type':'application/json',
-                        Authorization:process.env.FCBKEY
+                        Authorization:'key='+process.env.FCBKEY
                     }
                 }
                 //cabecera.headers['Content-Type'] = 'application/json'
