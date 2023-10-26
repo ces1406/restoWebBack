@@ -22,10 +22,11 @@ class UsersRoutes{
                 const cli = await Comensales.create({nombre:req.params.nombre});
 
                 const rta = fetch(url,cabecera)
-                res.status(200).send({idCliente:cli.dataValues.idCliente, datos:JSON.stringify(rta)})
+                //res.status(200).send({idCliente:cli.dataValues.idCliente, datos:JSON.stringify(rta)})
+                res.status(200).send({resp:JSON.stringify(rta)})
             } catch (error) {
                 res.statusMessage=error.msj;
-                return res.status(error.code||500).send();
+                return res.status(error.code||500).send({rta:JSON.stringify(error)});
             }
         })
         this.router.get('/dividepay/:idcli', async(req,res)=>{
