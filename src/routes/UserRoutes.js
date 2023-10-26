@@ -8,14 +8,28 @@ class UsersRoutes{
         this.routes();
     }
     routes(){
-        this.router.get('/:nombre',async(req,res,next)=>{
+        this.router.get('/:nombre/:deviceid',async(req,res,next)=>{
             try {
+                let cabecera = {method:'POST'}
+                cabecera.headers['Content-Type'] = 'application/json'
+                cabecera.headers['Authorizaton'] = process.env.FCBKEY
+                cabecera.body=JSON.stringify({
+                    registration_ids:[req.params.deviceid],
+                    notification: [{title:'un titulo',body:'el body es este'}],
+                    direct_boot_ok: true
+                })
+                let url = 'https://fcm.googleapis.com/fcm/send'
                 const cli = await Comensales.create({nombre:req.params.nombre});
-                res.status(200).send({idCliente:cli.dataValues.idCliente})
+
+                const rta = fetch(url,cabecera)
+                res.status(200).send({idCliente:cli.dataValues.idCliente, datos:JSON.stringify(rta)})
             } catch (error) {
                 res.statusMessage=error.msj;
                 return res.status(error.code||500).send();
             }
+        })
+        this.router.get('/dividepay/:idcli', async(req,res)=>{
+            //fetch
         })
     }
 }
