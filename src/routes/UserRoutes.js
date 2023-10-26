@@ -25,8 +25,9 @@ class UsersRoutes{
                 //res.status(200).send({idCliente:cli.dataValues.idCliente, datos:JSON.stringify(rta)})
                 res.status(200).send({resp:JSON.stringify(rta)})
             } catch (error) {
+                console.log('error-->',JSON.stringify(error))
                 res.statusMessage=error.msj;
-                return res.status(error.code||500).send({rta:JSON.stringify(error)});
+                return res.status(error.code||500).send({rta:JSON.stringify(error.mesagge)});
             }
         })
         this.router.get('/dividepay/:idcli', async(req,res)=>{
