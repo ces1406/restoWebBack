@@ -28,8 +28,8 @@ class UsersRoutes{
                 //const cli = await Comensales.create({nombre:req.params.nombre});
 
                 const rta = axios.post(url,data,config)
-                console.log('rta',JSON.stringify(rta.response))
-                res.status(200).send({resp:JSON.stringify(rta)})
+                console.log('rta'+rta.response)
+                res.status(200).json({resp:JSON.stringify(rta)})
             } catch (error) {
                 console.log('error-->',JSON.stringify(error))
                 res.statusMessage=error.msj;
