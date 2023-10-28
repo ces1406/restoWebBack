@@ -2,7 +2,9 @@ const {Router} = require('express');
 const {Pedidos,Comensales,Platos,start, Mesas} = require('../model/db');
 const qrcode = require('qrcode');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
+const {Op} = require('sequelize');
+const axios = require('axios')
 
 class MesasRoutes{
     constructor(){
@@ -41,7 +43,7 @@ class MesasRoutes{
         this.router.post('/registrarse/:idMesa/:hash',async(req,res)=>{
             try {
                 if (bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))){
-                    await Comensales.update({idMesa:req.params.idMesa},{where:{idCliente:req.body.idCliente}});
+                    await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.body.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
                     return res.status(200).json({token:this.crearToken(req.params.idMesa,req.body.idCliente)})
                 }else{
@@ -72,7 +74,78 @@ class MesasRoutes{
             res.status(200).json({msg:'ok'})
             //res.status(200).json({peds})
         })
-        this.router.post('/pagar/:idMesa',this.checkjwt,async(req,res)=>{
+
+        this.router.get('/pagar/individual/:idCliente',this.checkjwt,async(req,res)=>{
+            const pedidos = await Pedidos.findAll(/*{
+                include:[{
+                    model: Comensales,
+                    required: true,
+                    attributes:['idCliente']
+                }]
+            },*/{where:{
+                [Op.and]:[
+                    {idCliente:req.params.idCliente},
+                    {estado:{[Op.like]:'ENTREGADO'}}
+                ]
+            }});
+            for await(let ped of pedidos){
+                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:ped.idPedido}})
+            }
+            res.status(200).json(pedidos)
+        })
+
+        this.router.post('/pagar/varios/:idCliente',this.checkjwt,async(req,res)=>{
+            const pedidos = await Pedidos.findAll(
+                {where:{ [Op.and]:[{idCliente:req.params.idCliente},{estado:{[Op.like]:'ENTREGADO'}}]}}
+            );
+            for await(let ped of pedidos){
+                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:ped.idPedido}})
+            }
+            req.body.pagoscli.forEach(e=>{
+                Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+            })
+            res.status(200).json({msg:'ok'})
+        })
+
+        this.router.get('/pagar/dividido/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
+            let amigos = await Comensales.findAll({
+                    include:[{
+                        model:Mesas,
+                        required:true
+                    }],
+                    where:{idMesa:req.params.idMesa}
+                })
+            let config = {
+                headers:{
+                    'Content-Type':'application/json',
+                    Authorization:'key='+process.env.FCBKEY
+                }
+            }
+            let body = {
+                registration_ids:amigos.map(e=>e.idFcb),
+                notification: {title:'Pedido de cuenta',body:'El cliente ha pedido dividir la cuenta en partes iguales'},
+                direct_boot_ok: true
+            }
+            const rta = await axios.post(process.env.FCB_URL,body,config);
+            res.status(200).json({msg:'ok'})
+        })
+
+        /*this.router.get('/pagar/varios/aceptar/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
+            const cantAceptaron = await Comensales.count({where:{}})
+
+            const pedidos = await Pedidos.findAll(
+                {where:{ [Op.and]:[{idCliente:req.params.idCliente},{estado:{[Op.like]:'ENTREGADO'}}]}}
+            );
+            for await(let ped of pedidos){
+                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:ped.idPedido}})
+            }
+            req.body.pagoscli.forEach(e=>{
+                Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+            })
+            res.status(200).json({msg:'ok'})
+        })
+
+        this.router.post('/pagar/desafio/:idMesa',this.checkjwt,async(req,res)=>{
             //console.log('garping')
             //const datos = await this.checkjwt(req)
            // console.log('dato->',datos)
@@ -82,7 +155,9 @@ class MesasRoutes{
                 //console.log('e:',e)
                 Pedidos.update( {estado:'PAGANDO'},{where:{idCliente:e}} )
             })
-            res.status(200).json({msg:'ok'})})
+            res.status(200).json({msg:'ok'})
+        })
+        */
         this.router.get('/cerrar/:idMesa',this.checkjwt,async(req,res)=>{
             await Mesas.update({estado:'LIBRE'},{where:{idMesa:req.params.idMesa}})
             await Pedidos.destroy({where:{idMesa:req.params.idMesa}})
