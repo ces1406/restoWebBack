@@ -31,7 +31,7 @@ const Mesas = sequelize.define('Mesa',{
 const Comensales = sequelize.define('Comensal',{
     idCliente :{type:DataTypes.INTEGER, allowNull:false, autoIncrement:true, unique:true,primaryKey:true},
     nombre:{type:DataTypes.STRING(40),allowNull:false},
-    idFcb:{type:DataTypes.INTEGER},
+    idFcb:{type:DataTypes.STRING(400)},
     llegada:{type:DataTypes.DATE},
     estado:{type:DataTypes.STRING(20)}
 },{timestamps:false, tableName:'comensales'});
