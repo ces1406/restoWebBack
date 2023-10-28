@@ -33,7 +33,7 @@ const Comensales = sequelize.define('Comensal',{
     nombre:{type:DataTypes.STRING(40),allowNull:false},
     idFcb:{type:DataTypes.INTEGER},
     llegada:{type:DataTypes.DATE},
-    estado:{type:DataTypes.String(20)}
+    estado:{type:DataTypes.STRING(20)}
 },{timestamps:false, tableName:'comensales'});
 
 const Pedidos = sequelize.define('Pedido',{
