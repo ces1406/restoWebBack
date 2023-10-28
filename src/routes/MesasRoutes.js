@@ -33,6 +33,7 @@ class MesasRoutes{
         this.router.get('/qr/:id',async(req,res)=>{
             try{
                 const hash = bcrypt.hashSync((process.env.KEY_QR+req.params.id), 10);
+                console.log("process.env.SERVER_URL: ",process.env.SERVER_URL)
                 const QR = await qrcode.toDataURL(process.env.SERVER_URL+'/mesas/registrarse/'+req.params.id+'/'+btoa(hash))
                 res.status(200).send(`<div style ="display: flex; justifi-content:center; align-items:center"> <img src="${QR}"/></div>`);
                 //res.status(200).json({rta:'localhost:5000/mesas/registrarse/'+req.params.id+'/'+btoa(hash)})
