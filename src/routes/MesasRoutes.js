@@ -41,12 +41,12 @@ class MesasRoutes{
                 return res.status(500).send();
             }
         })
-        this.router.post('/registrarse/:idMesa/:hash',async(req,res)=>{
+        this.router.get('/registrarse/:idMesa/:idCliente/:hash',async(req,res)=>{
             try {
                 if (bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))){
-                    await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.body.idCliente}});
+                    await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
-                    return res.status(200).json({token:this.crearToken(req.params.idMesa,req.body.idCliente)})
+                    return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
                 }else{
                     return res.status(404).send()
                 }
