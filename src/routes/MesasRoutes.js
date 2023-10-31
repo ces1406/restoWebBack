@@ -78,13 +78,15 @@ class MesasRoutes{
         })
 
         this.router.get('/pagar/individual/:idCliente',this.checkjwt,async(req,res)=>{
-            const pedidos = await Pedidos.findAll(/*{
-                include:[{
-                    model: Comensales,
+            const pedidos = await Pedidos.findAll({
+                /*include:[{
+                    model: Platos,
                     required: true,
-                    attributes:['idCliente']
+                    attributes:['nombre','precio']
                 }]
-            },*/{where:{
+            },{
+                attributes:['cantidad','idPedido']
+            },{*/where:{
                 [Op.and]:[
                     {idCliente:req.params.idCliente},
                     {estado:{[Op.like]:'ENTREGADO'}}
@@ -96,13 +98,15 @@ class MesasRoutes{
             res.status(200).json(pedidos)
         })
         this.router.get('/consumos/:idCliente',this.checkjwt,async(req,res)=>{
-            const pedidos = await Pedidos.findAll(/*{
+            const pedidos = await Pedidos.findAll({
                 include:[{
-                    model: Comensales,
-                    required: true,
-                    attributes:['idCliente']
-                }]
-            },*/{where:{
+                model: Platos,
+                required: true,
+                attributes:['idPlato','nombre','precio']
+            }]
+        },{
+            attributes:['idPedido','cantidad']
+        },{where:{
                 [Op.and]:[
                     {idCliente:req.params.idCliente},
                     {estado:{[Op.like]:'ENTREGADO'}}
