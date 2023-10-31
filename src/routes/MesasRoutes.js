@@ -84,8 +84,7 @@ class MesasRoutes{
                 return res.status(500).send()
             }
         })
-        this.router.get('/consumos/:idCliente',this.checkjwt,async(req,res)=>{
-            
+        this.router.get('/consumos/:idCliente',this.checkjwt,async(req,res)=>{            
             const pedidos = await Pedidos.findAll({
                 include:[{
                     model: Platos,
@@ -101,7 +100,6 @@ class MesasRoutes{
                 }});
             res.status(200).json({consumo:pedidos})
         })
-
         this.router.post('/pagar/varios/:idCliente',this.checkjwt,async(req,res)=>{
             const pedidos = await Pedidos.findAll(
                 {where:{ [Op.and]:[{idCliente:req.params.idCliente},{estado:{[Op.like]:'ENTREGADO'}}]}}
@@ -114,7 +112,6 @@ class MesasRoutes{
             })
             res.status(200).json({msg:'ok'})
         })
-
         this.router.get('/pagar/dividido/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
             let amigos = await Comensales.findAll({
                     include:[{
@@ -137,7 +134,6 @@ class MesasRoutes{
             const rta = await axios.post(process.env.FCB_URL,body,config);
             res.status(200).json({msg:'ok'})
         })
-
         /*this.router.get('/pagar/varios/aceptar/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
             const cantAceptaron = await Comensales.count({where:{}})
 
@@ -152,7 +148,6 @@ class MesasRoutes{
             })
             res.status(200).json({msg:'ok'})
         })
-
         this.router.post('/pagar/desafio/:idMesa',this.checkjwt,async(req,res)=>{
             //console.log('garping')
             //const datos = await this.checkjwt(req)
@@ -198,11 +193,43 @@ class MesasRoutes{
                     }],
                     where:{idMesa:req.params.idMesa}
                 })
-                console.log('respondiendo->pedidos:',JSON.stringify(pedidos))
                 res.status(200).json({pedidos})
             } catch (error) {
                 res.statusMessage=error.msj;
                 return res.status(error.code||500).send();
+            }
+        })
+        this.router.get('/compas/:idMesa',async(req,res)=>{
+            try {
+                let comensales=[]
+                let compas = await Comensales.findAll({
+                    attributes:['idCliente','nombre'],
+                    where:{idMesa:req.params.idMesa}
+                }) 
+                console.log("compas->",compas)
+                for await (let cli of compas){
+                    let peds = await Pedidos.findAll({
+                        include:[{
+                            model: Platos,
+                            required: true,
+                            attributes:['idPlato','nombre','precio']
+                        }],
+                        attributes:['idPedido','cantidad'],
+                        where:{
+                            [Op.and]:[
+                                {idCliente:cli.idCliente},
+                                {estado:{[Op.like]:'ENTREGADO'}}
+                            ]
+                        }
+                    });
+                    console.log("peds->",peds)
+                    comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,pedidos:peds})
+                }   
+                return res.status(200).json(comensales)          
+            } catch (error) {
+                console.log("error->",error)
+                res.statusMessage=error.msj;
+                return res.status(error.code||500).send();                
             }
         })
     }
