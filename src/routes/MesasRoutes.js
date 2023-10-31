@@ -51,7 +51,6 @@ class MesasRoutes{
                     return res.status(404).send()
                 }
             } catch (error) {
-                console.log("error-505->")
                 return res.status(500).send()
             }
         })        
@@ -78,24 +77,12 @@ class MesasRoutes{
         })
 
         this.router.get('/pagar/individual/:idCliente',this.checkjwt,async(req,res)=>{
-            const pedidos = await Pedidos.findAll({
-                /*include:[{
-                    model: Platos,
-                    required: true,
-                    attributes:['nombre','precio']
-                }]
-            },{
-                attributes:['cantidad','idPedido']
-            },{*/where:{
-                [Op.and]:[
-                    {idCliente:req.params.idCliente},
-                    {estado:{[Op.like]:'ENTREGADO'}}
-                ]
-            }});
-            for await(let ped of pedidos){
-                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:ped.idPedido}})
+            try {
+                await Pedidos.update({estado:'PAGANDO'},{where:{idCliente:req.params.idCliente}})    
+                res.status(200).json({rta:'OK'})                
+            } catch (error) {                
+                return res.status(500).send()
             }
-            res.status(200).json(pedidos)
         })
         this.router.get('/consumos/:idCliente',this.checkjwt,async(req,res)=>{
             
