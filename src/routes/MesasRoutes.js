@@ -98,20 +98,20 @@ class MesasRoutes{
             res.status(200).json(pedidos)
         })
         this.router.get('/consumos/:idCliente',this.checkjwt,async(req,res)=>{
+            
             const pedidos = await Pedidos.findAll({
                 include:[{
-                model: Platos,
-                required: true,
-                attributes:['idPlato','nombre','precio']
-            }]
-        },{
-            attributes:['idPedido','cantidad']
-        },{where:{
-                [Op.and]:[
-                    {idCliente:req.params.idCliente},
-                    {estado:{[Op.like]:'ENTREGADO'}}
-                ]
-            }});
+                    model: Platos,
+                    required: true,
+                    attributes:['idPlato','nombre','precio']
+                }],
+                attributes:['idPedido','cantidad'],
+                where:{
+                    [Op.and]:[
+                        {idCliente:req.params.idCliente},
+                        {estado:{[Op.like]:'ENTREGADO'}}
+                    ]
+                }});
             res.status(200).json(pedidos)
         })
 
