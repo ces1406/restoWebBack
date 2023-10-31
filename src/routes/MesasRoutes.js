@@ -42,17 +42,12 @@ class MesasRoutes{
             }
         })
         this.router.get('/registrarse/:idMesa/:idCliente/:hash',async(req,res)=>{
-            console.log("mesas-registrarse")
             try {
-                console.log("cliente:",req.params.idCliente)
-                console.log("mesa:",req.params.idMesa)
-                console.log("hash:",req.params.hash)
                 if (bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))){
                     await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
                     return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
                 }else{
-                    console.log("error->bycript")
                     return res.status(404).send()
                 }
             } catch (error) {
@@ -165,6 +160,14 @@ class MesasRoutes{
             res.status(200).json({msg:'ok'})
         })
         */
+        this.router.get('/entregarpedidos/:idCli',async (req,res)=>{
+            try {
+                await Pedidos.update({estado:'ENTREGADO'},{where:{idCliente:req.params.idCli}})
+                return res.status(200).json({rta:'OK'})
+            } catch (error) {
+                return res.status(500).send()
+            }
+        })
         this.router.get('/cerrar/:idMesa',this.checkjwt,async(req,res)=>{
             await Mesas.update({estado:'LIBRE'},{where:{idMesa:req.params.idMesa}})
             await Pedidos.destroy({where:{idMesa:req.params.idMesa}})
