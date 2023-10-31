@@ -112,7 +112,7 @@ class MesasRoutes{
                         {estado:{[Op.like]:'ENTREGADO'}}
                     ]
                 }});
-            res.status(200).json(pedidos)
+            res.status(200).json({consumo:pedidos})
         })
 
         this.router.post('/pagar/varios/:idCliente',this.checkjwt,async(req,res)=>{
