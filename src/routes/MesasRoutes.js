@@ -225,7 +225,7 @@ class MesasRoutes{
                     console.log("peds->",peds)
                     comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,pedidos:peds})
                 }   
-                return res.status(200).json(comensales)          
+                return res.status(200).json({comensales:comensales})          
             } catch (error) {
                 console.log("error->",error)
                 res.statusMessage=error.msj;
