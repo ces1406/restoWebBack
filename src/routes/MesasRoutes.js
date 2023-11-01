@@ -213,12 +213,7 @@ class MesasRoutes{
                             required: true,
                             attributes:['nombre','precio']
                         }],
-                        where:{
-                            [Op.and]:[
-                                {idCliente:cli.idCliente},
-                                {estado:{[Op.like]:'ENTREGADO'}}
-                            ]
-                        }
+                        where:{idCliente:cli.idCliente}
                     });
                     comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,Pedidos:peds})
                 }   
