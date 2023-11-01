@@ -206,15 +206,13 @@ class MesasRoutes{
                     attributes:['idCliente','nombre'],
                     where:{idMesa:req.params.idMesa}
                 }) 
-                console.log("compas->",compas)
                 for await (let cli of compas){
                     let peds = await Pedidos.findAll({
                         include:[{
                             model: Platos,
                             required: true,
-                            attributes:['idPlato','nombre','precio']
+                            attributes:['nombre','precio']
                         }],
-                        attributes:['idPedido','cantidad'],
                         where:{
                             [Op.and]:[
                                 {idCliente:cli.idCliente},
@@ -222,8 +220,7 @@ class MesasRoutes{
                             ]
                         }
                     });
-                    console.log("peds->",peds)
-                    comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,pedidos:peds})
+                    comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,Pedidos:peds})
                 }   
                 return res.status(200).json({comensales:comensales})          
             } catch (error) {
