@@ -181,19 +181,23 @@ class MesasRoutes{
         })
         this.router.get('/estado/:idMesa',async(req,res)=>{
             try {
-                let pedidos = await Pedidos.findAll({
-                    include:[{
-                        model:Platos,
-                        required:true,
-                        attributes:['nombre','precio']
-                    },{
-                        model:Comensales,
-                        required:true,
-                        attributes:['nombre']
-                    }],
+                let comensales=[]
+                let compas = await Comensales.findAll({
+                    attributes:['idCliente','nombre'],
                     where:{idMesa:req.params.idMesa}
-                })
-                res.status(200).json({pedidos})
+                }) 
+                for await (let cli of compas){
+                    let peds = await Pedidos.findAll({
+                        include:[{
+                            model: Platos,
+                            required: true,
+                            attributes:['nombre','precio']
+                        }],
+                        where:{idCliente:cli.idCliente}
+                    });
+                    comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,Pedidos:peds})
+                }   
+                return res.status(200).json({comensales:comensales}) 
             } catch (error) {
                 res.statusMessage=error.msj;
                 return res.status(error.code||500).send();
@@ -215,7 +219,9 @@ class MesasRoutes{
                         }],
                         where:{idCliente:cli.idCliente}
                     });
-                    comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,Pedidos:peds})
+                    if(peds.filter(e => e.estado=="ENTREGADO").length !=0){
+                        comensales.push({idCliente:cli.idCliente,nombre:cli.nombre,Pedidos:peds.filter(e => e.estado=="ENTREGADO")})
+                    }
                 }   
                 return res.status(200).json({comensales:comensales})          
             } catch (error) {
