@@ -100,26 +100,15 @@ class MesasRoutes{
                 }});
             res.status(200).json({consumo:pedidos})
         })
-        this.router.post('/pagar/varios/:idCliente',this.checkjwt,async(req,res)=>{
-            const pedidos = await Pedidos.findAll(
-                {where:{ [Op.and]:[{idCliente:req.params.idCliente},{estado:{[Op.like]:'ENTREGADO'}}]}}
-            );
-            for await(let ped of pedidos){
-                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:ped.idPedido}})
-            }
-            req.body.pagoscli.forEach(e=>{
+        this.router.post('/pagar/invitados/:idCliente',this.checkjwt, async(req,res)=>{
+            let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+            let amigos=[]
+            await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
+            req.body.pagoscli.forEach(async e=>{
                 Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
             })
-            res.status(200).json({msg:'ok'})
-        })
-        this.router.get('/pagar/dividido/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
-            let amigos = await Comensales.findAll({
-                    include:[{
-                        model:Mesas,
-                        required:true
-                    }],
-                    where:{idMesa:req.params.idMesa}
-                })
+
             let config = {
                 headers:{
                     'Content-Type':'application/json',
@@ -128,10 +117,88 @@ class MesasRoutes{
             }
             let body = {
                 registration_ids:amigos.map(e=>e.idFcb),
-                notification: {title:'Pedido de cuenta',body:'El cliente ha pedido dividir la cuenta en partes iguales'},
+                notification: {title:'Pedido de cuenta',body:`El cliente ${invitador} te ha invitado y pagará lo que has consumido`},
                 direct_boot_ok: true
             }
             const rta = await axios.post(process.env.FCB_URL,body,config);
+            res.status(200).json({msg:rta})
+        })
+        this.router.get('/pagar/dividido/:idMesa/:idCliente/',this.checkjwt,async(req,res)=>{
+            await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}})
+            let sentados = await Comensales.findAll({
+                where:{
+                    [Op.and]:[
+                        {idMesa:req.params.idCMesa},
+                        {estado:{[Op.like]:'SENTADO'}}
+                    ]
+                }
+            })
+            let aceptantes = await Comensales.findAll({
+                where:{
+                    [Op.and]:[
+                        {idMesa:req.params.idCMesa},
+                        {estado:{[Op.like]:'PAGODIVIDIDO'}}
+                    ]
+                }
+            })
+            if(sentados.length==0){                
+                //ERA EL ULTIMO EN ACEPTAR => ACTUALIZAR
+                //(se pagaran todos los pedidos de la mesa)
+                await Pedidos.update({estado:'PAGANDO'},{where:{idMesa:req.params.idMesa}})
+                // Notificar que todos aceptaron:                
+                let config = {
+                    headers:{
+                        'Content-Type':'application/json',
+                        Authorization:'key='+process.env.FCBKEY
+                    }
+                }
+                let body = {
+                    registration_ids:aceptantes.map(e=>e.idFcb),
+                    notification: {
+                        title:'Pedido de cuenta',
+                        body:'Todos los comensales de la mesa han acordado en pagar el total gastado en la mesa en forma dividida'
+                    },
+                    direct_boot_ok: true
+                }
+                const rta = await axios.post(process.env.FCB_URL,body,config);
+            }
+
+            if(aceptantes.length==1){
+                //ERA EL PRIMERO => MANDAR LAS NOTIFICACIONES A LOS DEMAS
+                let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                let config = {
+                    headers:{
+                        'Content-Type':'application/json',
+                        Authorization:'key='+process.env.FCBKEY
+                    }
+                }
+                let body = {
+                    registration_ids:sentados.map(e=>e.idFcb),
+                    notification: {
+                        title:'Pedido de cuenta',
+                        body:`El cliente ${invitador} ha propuesto dividir el total de lo consumido en la mesa entre todos. (aceptar/rechazar?)`
+                    },
+                    direct_boot_ok: true
+                }
+                const rta = await axios.post(process.env.FCB_URL,body,config);
+            }else{
+                //ES UNO DE LOS QUE ACEPTAlet invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                let config = {
+                    headers:{
+                        'Content-Type':'application/json',
+                        Authorization:'key='+process.env.FCBKEY
+                    }
+                }
+                let body = {
+                    registration_ids:aceptantes.map(e=>(e.idFcb && e.idCliente!=req.params.idCliente)),
+                    notification: {
+                        title:'Pedido de cuenta',
+                        body:`El cliente ${invitador} ha aceptado dividir el total de lo consumido en la mesa entre todos`
+                    },
+                    direct_boot_ok: true
+                }
+                const rta = await axios.post(process.env.FCB_URL,body,config);
+            }
             res.status(200).json({msg:'ok'})
         })
         /*this.router.get('/pagar/varios/aceptar/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
