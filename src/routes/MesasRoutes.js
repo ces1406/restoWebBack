@@ -104,7 +104,7 @@ class MesasRoutes{
             try {
                 let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
                 let amigos=[]
-                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
+                //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
                 req.body.pagoscli.forEach(async e=>{
                     //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
                     amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
