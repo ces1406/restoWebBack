@@ -111,10 +111,6 @@ class MesasRoutes{
                     //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
                     amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
                 }
-                /*req.body.pagoscli.forEach(async e=>{
-                    Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
-                    amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
-                })*/
                 console.log("amigos-> ",JSON.stringify(amigos))
     
                 let config = {
@@ -125,12 +121,14 @@ class MesasRoutes{
                 }
                 let body = {
                     registration_ids:amigos.map(e=>e.idFcb),
-                    notification: {title:'Pedido de cuenta',body:`El cliente ${invitador} te ha invitado y pagará lo que has consumido`},
+                    notification: {title:'Pedido de cuenta',body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`},
                     direct_boot_ok: true
                 }
                 console.log("enviando push-notificatoin")
                 const rta = await axios.post(process.env.FCB_URL,body,config);
-                console.log("rta->",rta)
+                console.log("rta.status->",rta.status)
+                console.log("rta.statusText->",rta.statusText)
+                console.log("rta.config.data->",rta.config.data)
                 res.status(200).json({msg:rta})                
             } catch (error) {
                 console.log('error-> ',error)
