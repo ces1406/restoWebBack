@@ -103,12 +103,18 @@ class MesasRoutes{
         this.router.post('/pagar/invitados/:idCliente',this.checkjwt, async(req,res)=>{
             try {
                 let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                console.log('body.pagoscli: ',JSON.stringify(req.body.pagoscli))
+                console.log('invitador: ',JSON.stringify(invitador))
                 let amigos=[]
                 //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
-                req.body.pagoscli.forEach(async e=>{
+                for await (let e of req.body.pagoscli){
                     //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
                     amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
-                })
+                }
+                /*req.body.pagoscli.forEach(async e=>{
+                    Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                    amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
+                })*/
                 console.log("amigos-> ",JSON.stringify(amigos))
     
                 let config = {
