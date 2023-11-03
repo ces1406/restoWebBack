@@ -122,7 +122,11 @@ class MesasRoutes{
                 let body = {
                     registration_ids:amigos.map(e=>e.idFcb),
                     notification: {title:'Pedido de cuenta',body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`},
-                    direct_boot_ok: true
+                    direct_boot_ok: true,
+                    data:{
+                        "dato1":"contenido de el dato 1",
+                        "dato2":"contenido del dato2"
+                    }
                 }
                 console.log("enviando push-notificatoin")
                 const rta = await axios.post(process.env.FCB_URL,body,config);
