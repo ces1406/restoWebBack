@@ -129,7 +129,7 @@ class MesasRoutes{
                 console.log("rta.status->",rta.status)
                 console.log("rta.statusText->",rta.statusText)
                 console.log("rta.config.data->",rta.config.data)
-                res.status(200).json({msg:rta})                
+                res.status(200).json({msg:rta.statusText})                
             } catch (error) {
                 console.log('error-> ',error)
                 return res.status(500).send()                
