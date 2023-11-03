@@ -101,27 +101,35 @@ class MesasRoutes{
             res.status(200).json({consumo:pedidos})
         })
         this.router.post('/pagar/invitados/:idCliente',this.checkjwt, async(req,res)=>{
-            let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
-            let amigos=[]
-            await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
-            req.body.pagoscli.forEach(async e=>{
-                //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
-                amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
-            })
-
-            let config = {
-                headers:{
-                    'Content-Type':'application/json',
-                    Authorization:'key='+process.env.FCBKEY
+            try {
+                let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                let amigos=[]
+                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
+                req.body.pagoscli.forEach(async e=>{
+                    //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                    amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
+                })
+                console.log("amigos-> ",JSON.stringify(amigos))
+    
+                let config = {
+                    headers:{
+                        'Content-Type':'application/json',
+                        Authorization:'key='+process.env.FCBKEY
+                    }
                 }
+                let body = {
+                    registration_ids:amigos.map(e=>e.idFcb),
+                    notification: {title:'Pedido de cuenta',body:`El cliente ${invitador} te ha invitado y pagará lo que has consumido`},
+                    direct_boot_ok: true
+                }
+                console.log("enviando push-notificatoin")
+                const rta = await axios.post(process.env.FCB_URL,body,config);
+                console.log("rta->",rta)
+                res.status(200).json({msg:rta})                
+            } catch (error) {
+                console.log('error-> ',error)
+                return res.status(500).send()                
             }
-            let body = {
-                registration_ids:amigos.map(e=>e.idFcb),
-                notification: {title:'Pedido de cuenta',body:`El cliente ${invitador} te ha invitado y pagará lo que has consumido`},
-                direct_boot_ok: true
-            }
-            const rta = await axios.post(process.env.FCB_URL,body,config);
-            res.status(200).json({msg:rta})
         })
         this.router.get('/pagar/dividido/:idMesa/:idCliente/',this.checkjwt,async(req,res)=>{
             await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}})
