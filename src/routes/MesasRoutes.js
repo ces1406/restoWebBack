@@ -141,7 +141,7 @@ class MesasRoutes{
             }
         })
         this.router.get('/pagar/dividido/:idMesa/:idCliente/',this.checkjwt,async(req,res)=>{
-            await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}})
+            /*await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}})
             let sentados = await Comensales.findAll({
                 where:{
                     [Op.and]:[
@@ -216,8 +216,45 @@ class MesasRoutes{
                     direct_boot_ok: true
                 }
                 const rta = await axios.post(process.env.FCB_URL,body,config);
+            }*/
+            let sentados = await Comensales.findAll({
+                where:{
+                    [Op.and]:[
+                        {idMesa:req.params.idMesa},
+                        {estado:{[Op.like]:'SENTADO'}}
+                    ]
+                }
+            })
+            let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                //console.log('body.pagoscli: ',JSON.stringify(req.body.pagoscli))
+                //console.log('invitador: ',JSON.stringify(invitador))
+            let amigos=[]
+                //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
+            for await (let e of sentados){
+                    //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}}))
             }
-            res.status(200).json({msg:'ok'})
+            console.log("amigos",amigos)
+            let config = {
+                headers:{
+                    'Content-Type':'application/json',
+                    Authorization:'key='+process.env.FCBKEY
+                }
+            }
+            let body = {
+                registration_ids:amigos.map(e=>e.idFcb),
+                notification: {
+                    title:'Pago de la cuenta',
+                    body:`El cliente ${invitador.dataValues.nombre} ha propuesto dividir Todo lo consummidoinvitado y pagará lo que has consumido`,
+                },
+                direct_boot_ok: true,
+                data:{
+                    action: "share"
+                }
+            }
+            
+            const rta = await axios.post(process.env.FCB_URL,body,config);
+            res.status(200).json({msg:rta.statusText})     
         })
         /*this.router.get('/pagar/varios/aceptar/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
             const cantAceptaron = await Comensales.count({where:{}})
