@@ -125,7 +125,10 @@ class MesasRoutes{
                         body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`,
                         "notification_priority": "PRIORITY_DEFAULT"
                     },
-                    direct_boot_ok: true
+                    direct_boot_ok: true,
+                    data:{
+                        action: "invite"
+                    }
                 }
                 const rta = await axios.post(process.env.FCB_URL,body,config);
                 /*console.log("rta.status->",rta.status)
