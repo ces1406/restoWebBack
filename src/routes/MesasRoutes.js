@@ -103,16 +103,15 @@ class MesasRoutes{
         this.router.post('/pagar/invitados/:idCliente',this.checkjwt, async(req,res)=>{
             try {
                 let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
-                console.log('body.pagoscli: ',JSON.stringify(req.body.pagoscli))
-                console.log('invitador: ',JSON.stringify(invitador))
+                //console.log('body.pagoscli: ',JSON.stringify(req.body.pagoscli))
+                //console.log('invitador: ',JSON.stringify(invitador))
                 let amigos=[]
-                //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
+                await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
                 for await (let e of req.body.pagoscli){
-                    //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                    Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
                     amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
                 }
-                console.log("amigos-> ",JSON.stringify(amigos))
-    
+                //console.log("amigos-> ",JSON.stringify(amigos))    
                 let config = {
                     headers:{
                         'Content-Type':'application/json',
@@ -121,21 +120,20 @@ class MesasRoutes{
                 }
                 let body = {
                     registration_ids:amigos.map(e=>e.idFcb),
-                    notification: {title:'Pedido de cuenta',body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`},
-                    direct_boot_ok: true,
-                    data:{
-                        "dato1":"contenido de el dato 1",
-                        "dato2":"contenido del dato2"
-                    }
+                    notification: {
+                        title:'Pago de la cuenta',
+                        body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`,
+                        "notification_priority": "PRIORITY_DEFAULT"
+                    },
+                    direct_boot_ok: true
                 }
-                console.log("enviando push-notificatoin")
                 const rta = await axios.post(process.env.FCB_URL,body,config);
-                console.log("rta.status->",rta.status)
+                /*console.log("rta.status->",rta.status)
                 console.log("rta.statusText->",rta.statusText)
-                console.log("rta.config.data->",rta.config.data)
+                console.log("rta.config.data->",rta.config.data)*/
                 res.status(200).json({msg:rta.statusText})                
             } catch (error) {
-                console.log('error-> ',error)
+                //console.log('error-> ',error)
                 return res.status(500).send()                
             }
         })
@@ -192,7 +190,8 @@ class MesasRoutes{
                     registration_ids:sentados.map(e=>e.idFcb),
                     notification: {
                         title:'Pedido de cuenta',
-                        body:`El cliente ${invitador} ha propuesto dividir el total de lo consumido en la mesa entre todos. (aceptar/rechazar?)`
+                        body:`El cliente ${invitador.dataValues.nombre} ha propuesto dividir el total de lo consumido en la mesa entre todos. (aceptar/rechazar?)`,
+                        //click_action:""
                     },
                     direct_boot_ok: true
                 }
