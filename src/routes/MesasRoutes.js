@@ -122,8 +122,7 @@ class MesasRoutes{
                     registration_ids:amigos.map(e=>e.idFcb),
                     notification: {
                         title:'Pago de la cuenta',
-                        body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`,
-                        "notification_priority": "PRIORITY_DEFAULT"
+                        body:`El cliente ${invitador.dataValues.nombre} te ha invitado y pagará lo que has consumido`
                     },
                     direct_boot_ok: true,
                     data:{
