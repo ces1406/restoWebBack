@@ -3,7 +3,7 @@ const {Pedidos,Comensales,Platos,start, Mesas} = require('../model/db');
 const qrcode = require('qrcode');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const {Op} = require('sequelize');
+const {Op, Sequelize} = require('sequelize');
 const axios = require('axios')
 
 class MesasRoutes{
@@ -139,7 +139,154 @@ class MesasRoutes{
                 return res.status(500).send()                
             }
         })
-        this.router.get('/pagar/dividido/:idMesa/:idCliente/',this.checkjwt,async(req,res)=>{
+        this.router.get('/pagar/dividido/:idMesa/:idCliente/:rtaInvtacion',this.checkjwt,async(req,res)=>{
+            let amigos =[];
+            let config ={};
+            let body={};
+            let rta;
+            let sentados;
+            let invitador;
+            switch (req.params.rtaInvtacion){
+                case "start":
+                    await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
+                    
+                    let total = await Pedidos.findAll({
+                        include:[{
+                            model:Platos,
+                            required:true,
+                            attributes:['precio']
+                        }],
+                        attributes:['idPedido','cantidad'],
+                        //where:{idCliente:req.params.idCliente}
+                        where:{idMesa:req.params.idMesa}
+                    })                    
+                    let sum = total.reduce( (acu,elem)=>{return acu+(0+elem.cantidad) * (0+elem.Plato.precio)},0)
+
+                    sentados = await Comensales.findAll({
+                        where:{
+                            [Op.and]:[
+                                {idMesa:req.params.idMesa},
+                                {estado:{[Op.like]:'SENTADO'}},
+                                {[Op.not]:{idCliente:req.params.idCliente}}
+                            ]
+                        }
+                    })
+                    invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+
+                    for await (let e of sentados){
+                        amigos.push((await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}})).dataValues.idFcb)
+                    }
+
+                    config = {
+                        headers:{
+                            'Content-Type':'application/json',
+                            Authorization:'key='+process.env.FCBKEY
+                        }
+                    }                    
+                    body = {
+                        registration_ids:amigos,
+                        notification: {
+                            title:'Pago de la cuenta',
+                            body:`El cliente ${invitador.dataValues.nombre} ha propuesto dividir lo gastado en la mesa en partes iguales. El total gastado en la mesa es de $${sum} repartido entre ${sentados.length+1} comensales. A cada comensal le corresponde abonar $${sum/(sentados.length+1)}`,
+                        },
+                        direct_boot_ok: true,
+                        data:{
+                            action: "share"
+                        }
+                    }                    
+                    rta = await axios.post(process.env.FCB_URL,body,config);
+
+                    res.status(200).json({msg:rta.statusText}) 
+                break;
+                case "si":
+                    await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
+                    invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                    sentados = await Comensales.findAll({
+                        where:{
+                            [Op.and]:[
+                                {idMesa:req.params.idMesa},
+                                {estado:{[Op.like]:'SENTADO'}},
+                                {[Op.not]:{idCliente:req.params.idCliente}}
+                            ]
+                        }
+                    })
+                    for await (let e of sentados){
+                        amigos.push((await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}})).dataValues.idFcb)
+                    }
+                    config = {
+                        headers:{
+                            'Content-Type':'application/json',
+                            Authorization:'key='+process.env.FCBKEY
+                        }
+                    }
+                    if(sentados.length==0){                
+                        //ERA EL ULTIMO EN ACEPTAR => ACTUALIZAR
+                        //(se pagaran todos los pedidos de la mesa)
+                        await Pedidos.update({estado:'PAGANDO'},{where:{idMesa:req.params.idMesa}})
+                        // Notificar que todos aceptaron:                                        
+                        body = {
+                            registration_ids:amigos,
+                            notification: {
+                                title:'Pedido de cuenta',
+                                body:'Todos los comensales de la mesa han acordado en pagar el total gastado en la mesa en forma dividida'
+                            },
+                            direct_boot_ok: true,
+                            data:{
+                                action: "invite"
+                            }
+                        }
+                    }else{                                    
+                        body = {
+                            registration_ids:amigos,
+                            notification: {
+                                title:'Pedido de cuenta',
+                                body:`El usuario ${invitador} ha aceptado pagar el total gastado en la mesa en forma dividida`
+                            },
+                            direct_boot_ok: true,
+                            data:{
+                                action: "invite"
+                            }
+                        }
+                    }                  
+                    rta = await axios.post(process.env.FCB_URL,body,config);
+                    res.status(200).json({msg:rta.statusText}) 
+                break;
+                case "no":
+                    invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                    sentados = await Comensales.findAll({
+                        where:{
+                            [Op.and]:[
+                                {idMesa:req.params.idMesa},
+                                {estado:{ [Op.or]:{[Op.like]:'SENTADO',[Op.like]:'PAGODIVIDIDO'}}},
+                                {[Op.not]:{idCliente:req.params.idCliente}}
+                            ]
+                        }
+                    })
+                    for await (let e of sentados){
+                        amigos.push((await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}})).dataValues.idFcb)
+                        await Comensales.update( {estado:'SENTADO'}, {where:{estado:{[Op.like]:'PAGODIVIDIDO'}}} );
+                    }
+                    config = {
+                        headers:{
+                            'Content-Type':'application/json',
+                            Authorization:'key='+process.env.FCBKEY
+                        }
+                    }
+                    body = {
+                        registration_ids:amigos,
+                        notification: {
+                            title:'Pedido de cuenta',
+                            body:`El usuario ${invitador} No ha aceptado pagar el total gastado en la mesa en forma dividida`
+                        },
+                        direct_boot_ok: true,
+                        data:{
+                            action: "invite"
+                        }
+                    }
+                    rta = await axios.post(process.env.FCB_URL,body,config);
+                    res.status(200).json({msg:rta.statusText}) 
+                break;
+            }
             /*await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}})
             let sentados = await Comensales.findAll({
                 where:{
@@ -216,22 +363,22 @@ class MesasRoutes{
                 }
                 const rta = await axios.post(process.env.FCB_URL,body,config);
             }*/
-            let sentados = await Comensales.findAll({
+            /*let sentados = await Comensales.findAll({
                 where:{
                     [Op.and]:[
                         {idMesa:req.params.idMesa},
                         {estado:{[Op.like]:'SENTADO'}}
                     ]
                 }
-            })
-            let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+            })*/
+            //let invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
                 //console.log('body.pagoscli: ',JSON.stringify(req.body.pagoscli))
                 //console.log('invitador: ',JSON.stringify(invitador))
-            let amigos=[]
+            //let amigos=[]
                 //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
-            for await (let e of sentados){
+           /*for await (let e of sentados){
                     //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
-                amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}}))
+                amigos.push((await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}})).dataValues.idFcb)
             }
             console.log("amigos",amigos)
             let config = {
@@ -241,7 +388,7 @@ class MesasRoutes{
                 }
             }
             let body = {
-                registration_ids:amigos.map(e=>e.idFcb),
+                registration_ids:amigos,//amigos.map(e=>e.idFcb),
                 notification: {
                     title:'Pago de la cuenta',
                     body:`El cliente ${invitador.dataValues.nombre} ha propuesto dividir Todo lo consummidoinvitado y pagará lo que has consumido`,
@@ -253,7 +400,9 @@ class MesasRoutes{
             }
             
             const rta = await axios.post(process.env.FCB_URL,body,config);
-            res.status(200).json({msg:rta.statusText})     
+            console.log("rta.status->",rta.status)
+            console.log("rta.statusText->",rta.statusText)
+            res.status(200).json({msg:rta.statusText})    */ 
         })
         /*this.router.get('/pagar/varios/aceptar/:idMesa/:idCliente',this.checkjwt,async(req,res)=>{
             const cantAceptaron = await Comensales.count({where:{}})
