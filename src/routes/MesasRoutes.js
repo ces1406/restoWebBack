@@ -145,7 +145,8 @@ class MesasRoutes{
             let body={};
             let rta;
             let sentados;
-            let invitador;
+            let invitador;            
+            console.log("pago dividido ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
             switch (req.params.rtaInvtacion){
                 case "start":
                     await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
@@ -200,6 +201,7 @@ class MesasRoutes{
                 break;
                 case "si":
                     await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
+                    console.log("pago dividido->si ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
                     invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
                     sentados = await Comensales.findAll({
                         where:{
