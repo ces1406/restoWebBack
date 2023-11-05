@@ -240,7 +240,7 @@ class MesasRoutes{
                             registration_ids:amigos,
                             notification: {
                                 title:'Pedido de cuenta',
-                                body:`El usuario ${invitador} ha aceptado pagar el total gastado en la mesa en forma dividida`
+                                body:`El usuario ${invitador.dataValues.nombre} ha aceptado pagar el total gastado en la mesa en forma dividida`
                             },
                             direct_boot_ok: true,
                             data:{
@@ -276,7 +276,7 @@ class MesasRoutes{
                         registration_ids:amigos,
                         notification: {
                             title:'Pedido de cuenta',
-                            body:`El usuario ${invitador} No ha aceptado pagar el total gastado en la mesa en forma dividida`
+                            body:`El usuario ${invitador.dataValues.nombre} No ha aceptado pagar el total gastado en la mesa en forma dividida`
                         },
                         direct_boot_ok: true,
                         data:{
