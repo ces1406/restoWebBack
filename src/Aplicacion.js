@@ -1,4 +1,5 @@
 const express = require("express");
+const socket = require("socket.io");
 const PlatosRoutes = require('./routes/PlatosRoutes')
 const MesasRoutes = require('./routes/MesasRoutes')
 const UsersRoutes = require("./routes/UserRoutes")
@@ -9,8 +10,10 @@ class Aplicacion {
         this.setPort();
         this.setMiddlewares();
         this.enrutar();
+        //this.escuchar = null;
+        this.io = null;
     }
-    setPort = ()=>{
+    setPort = ()=>{        
         this.app.set('port',process.env.PORT||5000);
     }
     enrutar = ()=>{
@@ -37,8 +40,17 @@ class Aplicacion {
             next(); 
         }
     }
-    startServer = ()=>{
-        this.app.listen(this.app.get('port'),()=>{/*console.log('Escuchando en el puerto->',this.app.get('port'))*/})
+    /*startServer = ()=>{
+        this.escuchar = this.app.listen(this.app.get('port'),()=>{console.log('Escuchando en el puerto->',this.app.get('port'))})
+    }*/
+    startSocket = ()=>{
+        console.log("socket lanzado")
+        this.io = socket(this.app.listen(this.app.get('port'),()=>{
+            //console.log('Escuchando en el puerto->',this.app.get('port'))
+        }))
+        this.io.on('connection', (socket)=>{
+            //console.log('Nueva conexion')
+        })
     }
 }
 

@@ -6,7 +6,8 @@ const sequelize = new Sequelize(process.env.DATABASE_NAME,process.env.DATABASE_U
     timezone:'America/Argentina/Buenos_Aires',
     dialectOptions:{
         timezone:'local'
-    }
+    },
+    logging: false
 });
 
 const Platos = sequelize.define('Plato',{

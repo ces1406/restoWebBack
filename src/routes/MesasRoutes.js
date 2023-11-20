@@ -33,7 +33,7 @@ class MesasRoutes{
         this.router.get('/qr/:id',async(req,res)=>{
             try{
                 const hash = bcrypt.hashSync((process.env.KEY_QR+req.params.id), 10);
-                console.log("process.env.SERVER_URL: ",process.env.SERVER_URL)
+                //console.log("process.env.SERVER_URL: ",process.env.SERVER_URL)
                 const QR = await qrcode.toDataURL(process.env.SERVER_URL+'/mesas/registrarse/'+req.params.id+'/'+btoa(hash))
                 res.status(200).send(`<div style ="display: flex; justifi-content:center; align-items:center"> <img src="${QR}"/></div>`);
                 //res.status(200).json({rta:'localhost:5000/mesas/registrarse/'+req.params.id+'/'+btoa(hash)})
@@ -108,10 +108,10 @@ class MesasRoutes{
                 let amigos=[]
                 //await Pedidos.update({estado:'PAGANDO'},{where:{idPedido:req.params.idCliente}});
                 for await (let e of req.body.pagoscli){
-                    //Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
+                    Pedidos.update( {estado:'PAGANDO'},{where:{[Op.and]:[{idCliente:e},{estado:'ENTREGADO'}]}} )
                     amigos.push(await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e}}))
                 }
-                //console.log("amigos-> ",JSON.stringify(amigos))    
+                console.log("amigos-> ",JSON.stringify(amigos))    
                 let config = {
                     headers:{
                         'Content-Type':'application/json',
@@ -141,12 +141,14 @@ class MesasRoutes{
         })
         this.router.get('/pagar/dividido/:idMesa/:idCliente/:rtaInvtacion',this.checkjwt,async(req,res)=>{
             let amigos =[];
+            let amigos2 =[];
+            let amigos3 =[];
             let config ={};
             let body={};
             let rta;
             let sentados;
             let invitador;            
-            console.log("pago dividido ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
+            //console.log("pago dividido ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion+ ' idmesa-> '+req.params.idMesa)
             switch (req.params.rtaInvtacion){
                 case "start":
                     await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
@@ -173,10 +175,14 @@ class MesasRoutes{
                         }
                     })
                     invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
+                    //console.log('sentados->',JSON.stringify(sentados))
 
                     for await (let e of sentados){
                         amigos.push((await Comensales.findOne({attributes:['idFcb'],where:{idCliente:e.dataValues.idCliente}})).dataValues.idFcb)
                     }
+                    /*console.log("amigos-> ",JSON.stringify(amigos)) 
+                    console.log("amigos2-> ",JSON.stringify(amigos2)) 
+                    console.log("amigos3-> ",JSON.stringify(amigos3)) */
 
                     config = {
                         headers:{
@@ -188,20 +194,27 @@ class MesasRoutes{
                         registration_ids:amigos,
                         notification: {
                             title:'Pago de la cuenta',
-                            body:`El cliente ${invitador.dataValues.nombre} ha propuesto dividir lo gastado en la mesa en partes iguales. El total gastado en la mesa es de $${sum} repartido entre ${sentados.length+1} comensales. A cada comensal le corresponde abonar $${sum/(sentados.length+1)}`,
+                            body:`El cliente ${invitador.dataValues.nombre} propone dividir el gasto de la mesa. Un total de $${sum.toFixed(2).toLocaleString()} repartido entre ${sentados.length+1} comensales ($${(sum/(sentados.length+1)).toFixed(2)} cada uno)`,
                         },
                         direct_boot_ok: true,
                         data:{
-                            action: "share"
+                            action: "share",
+                            total: sum.toFixed(2).toLocaleString(),
+                            cantidad: sentados.length+1,
+                            pago: (sum/(sentados.length+1)).toFixed(2)
                         }
                     }                    
                     rta = await axios.post(process.env.FCB_URL,body,config);
+
+                    /*console.log('mensaje-->',body.notification)
+                    console.log('rta-AXIOS-->',rta.statusText)
+                    console.log("rta.config.data->",rta.config.data)*/
 
                     res.status(200).json({msg:rta.statusText}) 
                 break;
                 case "si":
                     await Comensales.update({estado:'PAGODIVIDIDO'},{where:{idCliente:req.params.idCliente}});
-                    console.log("pago dividido->si ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
+                    //console.log("pago dividido->si ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
                     invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
                     sentados = await Comensales.findAll({
                         where:{
@@ -224,7 +237,7 @@ class MesasRoutes{
                     if(sentados.length==0){                
                         //ERA EL ULTIMO EN ACEPTAR => ACTUALIZAR
                         //(se pagaran todos los pedidos de la mesa)
-                        await Pedidos.update({estado:'PAGANDO'},{where:{idMesa:req.params.idMesa}})
+                        //await Pedidos.update({estado:'PAGANDO'},{where:{idMesa:req.params.idMesa}})
                         // Notificar que todos aceptaron:                                        
                         body = {
                             registration_ids:amigos,
@@ -254,6 +267,7 @@ class MesasRoutes{
                     res.status(200).json({msg:rta.statusText}) 
                 break;
                 case "no":
+                    //console.log("pago dividido->no ->cli: "+req.params.idCliente+" accion-> "+req.params.rtaInvtacion)
                     invitador = await Comensales.findOne({attributes:['nombre'],where:{idCliente:req.params.idCliente}})
                     sentados = await Comensales.findAll({
                         where:{
@@ -497,7 +511,7 @@ class MesasRoutes{
                 }   
                 return res.status(200).json({comensales:comensales})          
             } catch (error) {
-                console.log("error->",error)
+                //console.log("error->",error)
                 res.statusMessage=error.msj;
                 return res.status(error.code||500).send();                
             }
