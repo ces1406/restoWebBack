@@ -43,7 +43,18 @@ class MesasRoutes{
         })
         this.router.get('/registrarse/:idMesa/:idCliente/:hash',async(req,res)=>{
             try {
-                let ok = bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))
+                console.log('Before-bcrypt-> idmesa:'+req.params.idMesa+' idCli:'+req.params.idCliente+' hash:'+atob(req.params.hash))
+                bcrypt.compare(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash),async (err,res)=>{
+                    if (err) {
+                        console.log('Bcrypt-Error->',err)
+                        return res.status(404).send()
+                    }
+                    await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
+                    await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
+                    return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
+                })
+
+                /*let ok = bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))
                 console.log('Registrarse->',ok)
                 if (ok){
                     await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
@@ -51,7 +62,7 @@ class MesasRoutes{
                     return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
                 }else{
                     return res.status(404).send()
-                }
+                }*/
             } catch (error) {
                 return res.status(500).send()
             }
