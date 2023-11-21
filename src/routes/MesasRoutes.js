@@ -212,7 +212,7 @@ class MesasRoutes{
                         registration_ids:amigos,
                         notification: {
                             title:'Pago de la cuenta',
-                            body:`El cliente ${invitador.dataValues.nombre} propone dividir el gasto de la mesa. Un total de $${sum.toFixed(2).toLocaleString()} repartido entre ${sentados.length+1} comensales ($${(sum/(sentados.length+1)).toFixed(2)} cada uno)`,
+                            body:`${invitador.dataValues.nombre} propone dividir el gasto de la mesa, $${sum.toFixed(2).toLocaleString()} repartido entre ${sentados.length+1} ($${(sum/(sentados.length+1)).toFixed(2)} cada uno)`,
                         },
                         direct_boot_ok: true,
                         data:{
