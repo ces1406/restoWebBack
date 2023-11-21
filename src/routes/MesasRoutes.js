@@ -71,8 +71,8 @@ class MesasRoutes{
                 }*/
                 //res.status(200).json({token:'kaka'})
             } catch (error) {
-                console.log('error->',error)
-                return res.status(500).json({error:error.msj})
+                //console.log('error->',error)
+                return res.status(500).json({code:error.code,error:JSON.stringify(error),msg:error.msg})
             }
         })        
         this.router.post('/ordenar/:idMesa/:idCliente',this.checkjwt ,async(req,res)=>{
