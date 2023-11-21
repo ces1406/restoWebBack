@@ -44,27 +44,35 @@ class MesasRoutes{
         this.router.get('/registrarse/:idMesa/:idCliente/:hash',async(req,res)=>{
             try {
                 console.log('Before-bcrypt-> idmesa:'+req.params.idMesa+' idCli:'+req.params.idCliente+' hash:'+atob(req.params.hash))
-                bcrypt.compare(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash),async (err,res)=>{
+                bcrypt.compare(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash), (err,resultado)=>{
+                    console.log('in compare')
                     if (err) {
+                        console.log('hay error')
                         console.log('Bcrypt-Error->',err)
                         return res.status(404).send(err)
                     }
-                    await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
-                    await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
-                    return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
+                    if(resultado){
+                        console.log('resultado-ok->',resultado)
+                        res.status(200).json({msj:resultado})
+                    }else{
+                        console.log('resultado-no ok->',resultado)
+                        res.status(404).json({msj:resultado})
+                    }                    
                 })
 
-                /*let ok = bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))
-                console.log('Registrarse->',ok)
-                if (ok){
+                //let ok = bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))
+                //console.log('Registrarse->',ok)
+                /*if (ok){
                     await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
                     return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
                 }else{
                     return res.status(404).send()
                 }*/
+                //res.status(200).json({token:'kaka'})
             } catch (error) {
-                return res.status(500).json({err:error})
+                console.log('error->',error)
+                return res.status(500).json({error:error.msj})
             }
         })        
         this.router.post('/ordenar/:idMesa/:idCliente',this.checkjwt ,async(req,res)=>{
