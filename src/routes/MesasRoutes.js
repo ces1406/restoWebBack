@@ -43,7 +43,9 @@ class MesasRoutes{
         })
         this.router.get('/registrarse/:idMesa/:idCliente/:hash',async(req,res)=>{
             try {
-                if (bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))){
+                let ok = bcrypt.compareSync(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash))
+                console.log('Registrarse->',ok)
+                if (ok){
                     await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
                     return res.status(200).json({token:this.crearToken(req.params.idMesa,req.params.idCliente)})
@@ -141,8 +143,6 @@ class MesasRoutes{
         })
         this.router.get('/pagar/dividido/:idMesa/:idCliente/:rtaInvtacion',this.checkjwt,async(req,res)=>{
             let amigos =[];
-            let amigos2 =[];
-            let amigos3 =[];
             let config ={};
             let body={};
             let rta;
