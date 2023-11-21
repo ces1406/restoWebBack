@@ -47,7 +47,7 @@ class MesasRoutes{
                 bcrypt.compare(process.env.KEY_QR+req.params.idMesa,atob(req.params.hash),async (err,res)=>{
                     if (err) {
                         console.log('Bcrypt-Error->',err)
-                        return res.status(404).send()
+                        return res.status(404).send(err)
                     }
                     await Comensales.update({idMesa:req.params.idMesa,estado:'SENTADO'},{where:{idCliente:req.params.idCliente}});
                     await Mesas.update({estado:'OCUPADA'},{where:{idMesa:req.params.idMesa}})
@@ -64,7 +64,7 @@ class MesasRoutes{
                     return res.status(404).send()
                 }*/
             } catch (error) {
-                return res.status(500).send()
+                return res.status(500).json({err:error})
             }
         })        
         this.router.post('/ordenar/:idMesa/:idCliente',this.checkjwt ,async(req,res)=>{
