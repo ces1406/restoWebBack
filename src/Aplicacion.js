@@ -44,7 +44,7 @@ class Aplicacion {
         this.escuchar = this.app.listen(this.app.get('port'),()=>{console.log('Escuchando en el puerto->',this.app.get('port'))})
     }*/
     startSocket = ()=>{
-        console.log("socket lanzado")
+        //console.log("socket lanzado")
         this.io = socket(this.app.listen(this.app.get('port'),()=>{
             //console.log('Escuchando en el puerto->',this.app.get('port'))
         }))
