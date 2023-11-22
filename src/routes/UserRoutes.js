@@ -18,6 +18,15 @@ class UsersRoutes{
                 return res.status(error.code||500).send({rta:JSON.stringify(error.mesagge)});
             }
         })
+        this.router.get('updatetoken/:idCiente/:deviceid', async(req,res)=>{
+            try {
+                await Comensales.update({idFcb:req.params.deviceid},{where:{idCliente:req.params.idCiente}})    
+                res.status(200).json({msg:'ok'})            
+            } catch (error) {                
+                res.statusMessage=error.msj;
+                return res.status(error.code||500).send({rta:JSON.stringify(error.mesagge)});
+            }
+        })
     }
 }
 
